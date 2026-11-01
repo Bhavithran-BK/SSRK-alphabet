@@ -1,0 +1,361 @@
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useCallback, useEffect } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import type { CaseType, LetterData, Stroke, PatternName } from '../types';
+import { patternConfigs } from '../data/patterns';
+import { markLetterCompleted } from '../utils/progress';
+import { sounds } from '../utils/audio';
+import LetterWorkspace from './LetterWorkspace';
+import PatternTray from './PatternTray';
+import CompletionModal from './CompletionModal';
+
+import { lowercaseLetters } from '../data/lowercase';
+import { uppercaseLetters } from '../data/uppercase';
+
+const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+export default function PracticeWorkspace() {
+  const { caseType, letter } = useParams<{ caseType: string; letter: string }>();
+  const navigate = useNavigate();
+  const ct = (caseType as CaseType) || 'lowercase';
+  const currentLetter = (letter || 'a').toLowerCase();
+  const isLower = ct === 'lowercase';
+
+  const [completedStrokes, setCompletedStrokes] = useState<Set<string>>(new Set());
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [letterData, setLetterData] = useState<LetterData | null>(null);
+  const [selectedPattern, setSelectedPattern] = useState<PatternName | null>(null);
+  const [activeDragPattern, setActiveDragPattern] = useState<PatternName | null>(null);
+  const [activeDragStroke, setActiveDragStroke] = useState<Stroke | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Load letter data when current letter or case changes
+  useEffect(() => {
+    const letters = isLower ? lowercaseLetters : uppercaseLetters;
+    const found = letters.find(l => l.character.toLowerCase() === currentLetter);
+    setLetterData(found || null);
+    setCompletedStrokes(new Set());
+    setShowCompletion(false);
+    setSelectedPattern(null);
+    setActiveDragPattern(null);
+    setActiveDragStroke(null);
+  }, [currentLetter, ct, isLower]);
+
+  const letterIndex = allLetters.indexOf(currentLetter);
+  const letterNumber = letterIndex + 1;
+  const progressPercent = Math.round((letterNumber / 26) * 100);
+  const hasPrev = letterIndex > 0;
+  const hasNext = letterIndex < 25;
+
+  const handleStrokeComplete = useCallback((strokeId: string) => {
+    setCompletedStrokes(prev => {
+      const next = new Set(prev);
+      next.add(strokeId);
+
+      if (letterData && next.size === letterData.strokes.length) {
+        setTimeout(() => {
+          sounds.playCelebration();
+          markLetterCompleted(ct, currentLetter);
+          setShowCompletion(true);
+        }, 500);
+      }
+
+      return next;
+    });
+  }, [letterData, ct, currentLetter]);
+
+  const handleReset = useCallback(() => {
+    setCompletedStrokes(new Set());
+    setShowCompletion(false);
+    setSelectedPattern(null);
+    setActiveDragPattern(null);
+    setActiveDragStroke(null);
+    sounds.playPickup();
+  }, []);
+
+  const goToLetter = useCallback((l: string) => {
+    navigate(`/practice/${ct}/${l}`);
+  }, [navigate, ct]);
+
+  const goPrev = () => {
+    if (hasPrev) goToLetter(allLetters[letterIndex - 1]);
+  };
+
+  const goNext = () => {
+    if (hasNext) goToLetter(allLetters[letterIndex + 1]);
+  };
+
+  // Drag tracking
+  const handleStartDrag = useCallback((patternName: PatternName, e: ReactPointerEvent, stroke?: Stroke) => {
+    setActiveDragPattern(patternName);
+    setActiveDragStroke(stroke || null);
+    setDragPos({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  useEffect(() => {
+    if (!activeDragPattern) return;
+
+    const onPointerMove = (e: PointerEvent) => {
+      setDragPos({ x: e.clientX, y: e.clientY });
+    };
+
+    const onPointerUp = () => {
+      setActiveDragPattern(null);
+      setActiveDragStroke(null);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [activeDragPattern]);
+
+  const displayChar = isLower ? currentLetter : currentLetter.toUpperCase();
+
+  return (
+    <div className="h-screen max-h-screen w-full bg-[#fbfbfe] text-[#1e1b4b] flex flex-col justify-between p-3 sm:p-4 overflow-hidden select-none">
+      {/* Floating Dragged Piece Preview */}
+      {activeDragPattern && (
+        <div
+          className="fixed pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 bg-white/95 p-3 shadow-2xl border-2 border-indigo-500 scale-105 rounded-none"
+          style={{ left: dragPos.x, top: dragPos.y }}
+        >
+          <div className="w-16 h-16 flex items-center justify-center">
+            <svg
+              viewBox="0 0 60 60"
+              className="w-full h-full"
+            >
+              <path
+                d={activeDragStroke?.previewPath || activeDragStroke?.targetPath || patternConfigs[activeDragPattern]?.displayPath}
+                fill={activeDragPattern === 'Dot' ? '#4f46e5' : 'none'}
+                stroke="#4f46e5"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <div className="text-xs font-bold text-center text-[#1e1b4b] mt-1 whitespace-nowrap">
+            {activeDragPattern}
+          </div>
+        </div>
+      )}
+
+      {/* TOP HEADER: School Logo, School Name, Controls */}
+      <div className="w-full border-b border-gray-200/80 pb-2">
+        <div className="flex items-center justify-between gap-3">
+          {/* Logo & School Name */}
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
+            <img
+              src="/logo.png"
+              alt="Sri Sairam Kids Play School"
+              className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0"
+            />
+            <div className="flex flex-col">
+              <span className="text-base sm:text-lg font-black text-[#1e1b4b] leading-tight tracking-tight">
+                Sri Sairam Kids Play School
+              </span>
+              <span className="text-[10px] sm:text-xs font-bold text-indigo-600 tracking-wide">
+                Alphabet Handwriting Practice
+              </span>
+            </div>
+          </div>
+
+          {/* Center Category Badge */}
+          <div className="hidden md:flex items-center gap-2">
+            <span className="text-sm font-bold text-[#1e1b4b]">
+              {isLower ? 'Small Letters Practice' : 'Capital Letters Practice'}
+            </span>
+            <span className="bg-[#ede9fe] text-[#7c3aed] text-xs font-bold px-2.5 py-0.5 rounded-none border border-purple-200">
+              {isLower ? 'a – z' : 'A – Z'}
+            </span>
+          </div>
+
+          {/* Right: Progress & Buttons (No rounded corners) */}
+          <div className="flex items-center gap-3">
+            {/* Progress */}
+            <div className="flex flex-col items-end">
+              <span className="text-[11px] font-semibold text-gray-500">
+                Letter {letterNumber} of 26 ({progressPercent}%)
+              </span>
+              <div className="w-28 sm:w-36 h-2 bg-[#ede9fe] overflow-hidden rounded-none">
+                <div
+                  className="h-full bg-[#22c55e] transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Navigation buttons: sharp rectangular corners */}
+            <button
+              onClick={() => navigate(`/alphabet/${ct}`)}
+              className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-[#1e1b4b] text-xs font-bold transition-colors cursor-pointer rounded-none"
+            >
+              All Letters
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer rounded-none"
+            >
+              Home
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* MAIN 3-COLUMN LAYOUT: Utilizes full laptop screen height */}
+      <div className="flex-1 min-h-0 grid grid-cols-12 gap-3 sm:gap-4 my-2 items-stretch">
+        {/* LEFT COLUMN: Mascot & Instructions (col-span-3) */}
+        <div className="col-span-3 flex flex-col justify-between gap-2.5 h-full min-h-0">
+          {/* Mascot */}
+          <div className="flex items-center justify-center p-1 bg-white border border-gray-200 rounded-none shrink-0">
+            <img
+              src="/mascot.png"
+              alt="Mascot"
+              className="h-28 sm:h-32 object-contain select-none pointer-events-none"
+            />
+          </div>
+
+          {/* Instructions Box */}
+          <div className="bg-[#f5f3ff] p-3.5 border border-purple-100 flex-1 flex flex-col justify-between rounded-none overflow-y-auto">
+            <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-purple-100">
+              <div className="w-5 h-5 bg-[#7c3aed] flex items-center justify-center text-white text-xs font-bold rounded-none">
+                🎯
+              </div>
+              <h3 className="font-bold text-[#1e1b4b] text-sm">
+                Instructions
+              </h3>
+            </div>
+
+            <div className="flex flex-col gap-2.5 text-xs text-gray-700">
+              <div className="flex items-start gap-2">
+                <span className="w-4.5 h-4.5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-none">
+                  1
+                </span>
+                <span className="font-medium leading-snug">
+                  Drag a pattern from the right.
+                </span>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="w-4.5 h-4.5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-none">
+                  2
+                </span>
+                <span className="font-medium leading-snug">
+                  Place it on the dotted letter.
+                </span>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="w-4.5 h-4.5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-none">
+                  3
+                </span>
+                <span className="font-medium leading-snug">
+                  When it fits, it will snap and turn green.
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-2 pt-2 border-t border-purple-100 text-[11px] text-gray-500 text-center font-medium">
+              Sri Sairam Kids Play School
+            </div>
+          </div>
+        </div>
+
+        {/* MIDDLE COLUMN: Dotted Letter Workspace (col-span-6) */}
+        <div className="col-span-6 flex flex-col items-center justify-center h-full min-h-0">
+          {letterData && (
+            <LetterWorkspace
+              letterData={letterData}
+              completedStrokes={completedStrokes}
+              onStrokeComplete={handleStrokeComplete}
+              selectedPattern={selectedPattern}
+              onClearSelectedPattern={() => setSelectedPattern(null)}
+              activeDragPattern={activeDragPattern}
+              activeDragStroke={activeDragStroke}
+            />
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: Available Patterns (col-span-3) */}
+        <div className="col-span-3 flex flex-col h-full min-h-0">
+          {letterData && (
+            <PatternTray
+              strokes={letterData.strokes}
+              completedStrokes={completedStrokes}
+              patternConfigs={patternConfigs}
+              selectedPattern={selectedPattern}
+              onSelectPattern={setSelectedPattern}
+              onStartDrag={handleStartDrag}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* BOTTOM ACTION BAR: Sharp rectangular buttons, well-spaced, no rounded corners */}
+      <div className="w-full border-t border-gray-200/80 pt-2 shrink-0">
+        <div className="flex items-center justify-center gap-6 sm:gap-8">
+          {/* Previous Button: Sharp corners */}
+          <button
+            onClick={goPrev}
+            disabled={!hasPrev}
+            className={`
+              rounded-none px-8 py-2.5 text-sm font-bold border transition-all flex items-center gap-2
+              ${hasPrev
+                ? 'bg-gray-100 text-[#1e1b4b] border-gray-300 hover:bg-gray-200 cursor-pointer shadow-xs'
+                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
+              }
+            `}
+          >
+            <span>←</span>
+            <span>Previous</span>
+          </button>
+
+          {/* Reset Button: Sharp corners */}
+          <button
+            onClick={handleReset}
+            className="rounded-none px-8 py-2.5 bg-white border-2 border-indigo-600 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition-colors shadow-xs cursor-pointer flex items-center gap-2"
+          >
+            <svg className="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Reset</span>
+          </button>
+
+          {/* Next Button: Sharp corners */}
+          <button
+            onClick={goNext}
+            disabled={!hasNext}
+            className={`
+              rounded-none px-10 py-2.5 text-sm font-bold transition-all shadow-xs flex items-center gap-2
+              ${hasNext
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
+                : 'bg-gray-300 text-gray-500 border border-gray-300 cursor-not-allowed opacity-50'
+              }
+            `}
+          >
+            <span>Next</span>
+            <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Completion Modal */}
+      <AnimatePresence>
+        {showCompletion && (
+          <CompletionModal
+            letter={displayChar}
+            caseType={ct}
+            onNext={hasNext ? goNext : undefined}
+            onReplay={handleReset}
+            onHome={() => navigate('/')}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
