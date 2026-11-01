@@ -104,7 +104,7 @@ export default function PracticeWorkspace() {
     return { x: svgPoint.x, y: svgPoint.y };
   };
 
-  // Start dragging - initialized without re-rendering the whole page
+  // Start dragging
   const handleStartDrag = useCallback((stroke: Stroke, e: ReactPointerEvent) => {
     draggingStrokeRef.current = stroke;
     sounds.playPickup();
@@ -118,16 +118,14 @@ export default function PracticeWorkspace() {
     }
   }, []);
 
-  // Global Pointer Listeners for buttery smooth 120 FPS dragging
+  // Global Pointer Listeners for buttery smooth dragging
   useEffect(() => {
     const onPointerMove = (e: PointerEvent) => {
       const activeStroke = draggingStrokeRef.current;
       if (!activeStroke || !dragElementRef.current) return;
 
-      // Update floating preview directly in the DOM (Zero React re-render lag)
       dragElementRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
 
-      // Check proximity to strokes in SVG
       if (!letterData) return;
       const svgCoords = getSvgCoordinates(e.clientX, e.clientY);
       if (!svgCoords) {
@@ -138,7 +136,6 @@ export default function PracticeWorkspace() {
         return;
       }
 
-      // Check if near any uncompleted stroke
       let matchedId: string | null = null;
       for (const s of letterData.strokes) {
         if (completedStrokes.has(s.id)) continue;
@@ -149,7 +146,6 @@ export default function PracticeWorkspace() {
         }
       }
 
-      // Only trigger state update when hover target changes
       if (hoveredIdRef.current !== matchedId) {
         hoveredIdRef.current = matchedId;
         setActiveHoveredStrokeId(matchedId);
@@ -160,7 +156,6 @@ export default function PracticeWorkspace() {
       const activeStroke = draggingStrokeRef.current;
       if (!activeStroke) return;
 
-      // Hide drag element
       if (dragElementRef.current) {
         dragElementRef.current.style.display = 'none';
       }
@@ -168,7 +163,6 @@ export default function PracticeWorkspace() {
       hoveredIdRef.current = null;
       setActiveHoveredStrokeId(null);
 
-      // Check if dropped near target
       if (!letterData) return;
       const svgCoords = getSvgCoordinates(e.clientX, e.clientY);
       if (!svgCoords) {
@@ -176,7 +170,6 @@ export default function PracticeWorkspace() {
         return;
       }
 
-      // 1. Direct match check with activeStroke
       const distToOwnTarget = Math.hypot(svgCoords.x - activeStroke.targetX, svgCoords.y - activeStroke.targetY);
       if (distToOwnTarget <= 65 && !completedStrokes.has(activeStroke.id)) {
         sounds.playSnap();
@@ -184,7 +177,6 @@ export default function PracticeWorkspace() {
         return;
       }
 
-      // 2. Compatibility check with other strokes of same type
       let foundSnap: Stroke | null = null;
       for (const s of letterData.strokes) {
         if (completedStrokes.has(s.id)) continue;
@@ -218,10 +210,10 @@ export default function PracticeWorkspace() {
 
   return (
     <div className="h-screen max-h-screen w-full bg-[#fbfbfe] text-[#1e1b4b] flex flex-col justify-between p-3 sm:p-4 overflow-hidden select-none">
-      {/* Lag-Free Direct-DOM Floating Dragged Preview */}
+      {/* Floating Dragged Preview with rounded corners */}
       <div
         ref={dragElementRef}
-        className="fixed pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 bg-white/95 p-3 shadow-2xl border-2 border-indigo-600 scale-105 rounded-none"
+        className="fixed pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 bg-white/95 p-3.5 shadow-2xl border-2 border-indigo-600 scale-105 rounded-2xl"
         style={{ display: 'none', top: 0, left: 0 }}
       >
         <div className="w-16 h-16 flex items-center justify-center">
@@ -243,8 +235,8 @@ export default function PracticeWorkspace() {
         />
       </div>
 
-      {/* TOP HEADER: Sri Sairam Kids Play School Logo & Title */}
-      <div className="w-full border-b border-gray-200 pb-2">
+      {/* TOP HEADER */}
+      <header className="w-full border-b border-gray-200/80 pb-2">
         <div className="flex items-center justify-between gap-3">
           {/* Logo & School Name */}
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
@@ -268,20 +260,20 @@ export default function PracticeWorkspace() {
             <span className="text-sm font-bold text-[#1e1b4b]">
               {isLower ? 'Small Letters Practice' : 'Capital Letters Practice'}
             </span>
-            <span className="bg-[#ede9fe] text-[#7c3aed] text-xs font-bold px-2.5 py-0.5 border border-purple-200 rounded-none">
+            <span className="bg-[#ede9fe] text-[#7c3aed] text-xs font-bold px-3 py-1 border border-purple-200 rounded-full">
               {isLower ? 'a – z' : 'A – Z'}
             </span>
           </div>
 
-          {/* Progress & Navigation (No rounded corners) */}
+          {/* Progress & Navigation (Smooth rounded buttons) */}
           <div className="flex items-center gap-3">
             <div className="flex flex-col items-end">
               <span className="text-[11px] font-semibold text-gray-500">
                 Letter {letterNumber} of 26 ({progressPercent}%)
               </span>
-              <div className="w-28 sm:w-36 h-2 bg-[#ede9fe] overflow-hidden rounded-none">
+              <div className="w-28 sm:w-36 h-2.5 bg-[#ede9fe] overflow-hidden rounded-full">
                 <div
-                  className="h-full bg-[#22c55e] transition-all duration-300"
+                  className="h-full bg-[#22c55e] transition-all duration-300 rounded-full"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -289,26 +281,26 @@ export default function PracticeWorkspace() {
 
             <button
               onClick={() => navigate(`/alphabet/${ct}`)}
-              className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-[#1e1b4b] text-xs font-bold transition-colors cursor-pointer rounded-none"
+              className="px-3.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-[#1e1b4b] text-xs font-bold transition-all cursor-pointer rounded-xl shadow-xs"
             >
               All Letters
             </button>
             <button
               onClick={() => navigate('/')}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer rounded-none"
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer rounded-xl shadow-xs"
             >
               Home
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* MAIN 3-COLUMN LAYOUT: Fits completely on laptop screen */}
-      <div className="flex-1 min-h-0 grid grid-cols-12 gap-3 sm:gap-4 my-2 items-stretch">
+      {/* MAIN 3-COLUMN LAYOUT: Fits laptop screen */}
+      <main className="flex-1 min-h-0 grid grid-cols-12 gap-3 sm:gap-4 my-2 items-stretch">
         {/* LEFT COLUMN: Mascot & Instructions (col-span-3) */}
         <div className="col-span-3 flex flex-col justify-between gap-2.5 h-full min-h-0">
-          {/* Mascot */}
-          <div className="flex items-center justify-center p-2 bg-white border border-gray-200 rounded-none shrink-0">
+          {/* Mascot Box */}
+          <div className="flex items-center justify-center p-2 bg-white border-2 border-indigo-100/80 rounded-3xl shadow-xs shrink-0">
             <img
               src="/mascot.png"
               alt="Mascot"
@@ -317,7 +309,7 @@ export default function PracticeWorkspace() {
           </div>
 
           {/* Instructions Box */}
-          <div className="bg-[#f5f3ff] p-3.5 border border-purple-100 flex-1 flex flex-col justify-between rounded-none overflow-y-auto">
+          <div className="bg-[#f5f3ff] p-4 border border-purple-100 flex-1 flex flex-col justify-between rounded-3xl shadow-xs overflow-y-auto">
             <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-purple-100">
               <span className="text-sm">🎯</span>
               <h3 className="font-bold text-[#1e1b4b] text-sm">
@@ -327,7 +319,7 @@ export default function PracticeWorkspace() {
 
             <div className="flex flex-col gap-2.5 text-xs text-gray-700">
               <div className="flex items-start gap-2">
-                <span className="w-4.5 h-4.5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-none">
+                <span className="w-5 h-5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-full">
                   1
                 </span>
                 <span className="font-medium leading-snug">
@@ -336,7 +328,7 @@ export default function PracticeWorkspace() {
               </div>
 
               <div className="flex items-start gap-2">
-                <span className="w-4.5 h-4.5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-none">
+                <span className="w-5 h-5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-full">
                   2
                 </span>
                 <span className="font-medium leading-snug">
@@ -345,7 +337,7 @@ export default function PracticeWorkspace() {
               </div>
 
               <div className="flex items-start gap-2">
-                <span className="w-4.5 h-4.5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-none">
+                <span className="w-5 h-5 bg-[#7c3aed] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 rounded-full">
                   3
                 </span>
                 <span className="font-medium leading-snug">
@@ -381,19 +373,19 @@ export default function PracticeWorkspace() {
             />
           )}
         </div>
-      </div>
+      </main>
 
-      {/* BOTTOM ACTION BAR: Sharp rectangular buttons, well-spaced, no rounded corners */}
-      <div className="w-full border-t border-gray-200 pt-2 shrink-0">
+      {/* BOTTOM ACTION BAR: Smooth rounded buttons */}
+      <footer className="w-full border-t border-gray-200/80 pt-2 shrink-0">
         <div className="flex items-center justify-center gap-6 sm:gap-8">
-          {/* Previous Button: Sharp corners */}
+          {/* Previous Button: rounded-2xl */}
           <button
             onClick={goPrev}
             disabled={!hasPrev}
             className={`
-              rounded-none px-8 py-2.5 text-sm font-bold border transition-all flex items-center gap-2
+              rounded-2xl px-8 py-2.5 text-sm font-bold border transition-all flex items-center gap-2 shadow-xs
               ${hasPrev
-                ? 'bg-gray-100 text-[#1e1b4b] border-gray-300 hover:bg-gray-200 cursor-pointer shadow-xs'
+                ? 'bg-gray-100 text-[#1e1b4b] border-gray-300 hover:bg-gray-200 cursor-pointer'
                 : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
               }
             `}
@@ -402,10 +394,10 @@ export default function PracticeWorkspace() {
             <span>Previous</span>
           </button>
 
-          {/* Reset Button: Sharp corners */}
+          {/* Reset Button: rounded-2xl */}
           <button
             onClick={handleReset}
-            className="rounded-none px-8 py-2.5 bg-white border-2 border-indigo-600 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition-colors shadow-xs cursor-pointer flex items-center gap-2"
+            className="rounded-2xl px-8 py-2.5 bg-white border-2 border-indigo-600 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition-all shadow-xs cursor-pointer flex items-center gap-2"
           >
             <svg className="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -413,14 +405,14 @@ export default function PracticeWorkspace() {
             <span>Reset</span>
           </button>
 
-          {/* Next Button: Sharp corners */}
+          {/* Next Button: rounded-2xl */}
           <button
             onClick={goNext}
             disabled={!hasNext}
             className={`
-              rounded-none px-10 py-2.5 text-sm font-bold transition-all shadow-xs flex items-center gap-2
+              rounded-2xl px-10 py-2.5 text-sm font-bold transition-all shadow-md flex items-center gap-2
               ${hasNext
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-indigo-500/20'
                 : 'bg-gray-300 text-gray-500 border border-gray-300 cursor-not-allowed opacity-50'
               }
             `}
@@ -429,7 +421,7 @@ export default function PracticeWorkspace() {
             <span>→</span>
           </button>
         </div>
-      </div>
+      </footer>
 
       {/* Completion Modal */}
       <AnimatePresence>

@@ -20,7 +20,7 @@ export default function PatternTray({
   onStartDrag,
 }: PatternTrayProps) {
   return (
-    <div className="bg-white border-2 border-gray-200 shadow-sm flex flex-col h-full w-full p-4 rounded-none select-none">
+    <div className="bg-white border-2 border-indigo-100/80 shadow-md flex flex-col h-full w-full p-4 rounded-3xl select-none">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
@@ -29,12 +29,12 @@ export default function PatternTray({
             Available Patterns
           </h2>
         </div>
-        <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 border border-indigo-200">
+        <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
           Drag to Match
         </span>
       </div>
 
-      {/* Pattern Cards List */}
+      {/* Pattern Cards List - Smooth rounded corners */}
       <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-1">
         {strokes.map((stroke, index) => {
           const isDone = completedStrokes.has(stroke.id);
@@ -47,10 +47,10 @@ export default function PatternTray({
             <div
               key={stroke.id}
               className={`
-                relative bg-white border-2 transition-all p-3 flex flex-col items-center justify-center rounded-none
+                relative bg-white border-2 transition-all p-3 flex flex-col items-center justify-center rounded-2xl
                 ${isDone
-                  ? 'border-emerald-300 bg-emerald-50/50 opacity-60 cursor-default'
-                  : 'border-gray-200 hover:border-indigo-600 hover:shadow-md cursor-grab active:cursor-grabbing bg-white'
+                  ? 'border-emerald-300 bg-emerald-50/50 opacity-60 cursor-default shadow-xs'
+                  : 'border-purple-200 hover:border-indigo-600 hover:shadow-md cursor-grab active:cursor-grabbing bg-white shadow-xs hover:scale-[1.01]'
                 }
               `}
               onPointerDown={(e) => {
@@ -61,7 +61,7 @@ export default function PatternTray({
             >
               {/* Stroke Order Number Badge */}
               <div
-                className="absolute top-2 left-2 w-5 h-5 flex items-center justify-center text-[10px] font-black shadow-xs rounded-none"
+                className="absolute top-2.5 left-2.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs"
                 style={{ backgroundColor: stepStyle.bg, color: stepStyle.text }}
                 title={`Stroke ${strokeNum}`}
               >
@@ -70,11 +70,11 @@ export default function PatternTray({
 
               {/* Status Badge */}
               {isDone ? (
-                <span className="absolute top-2 right-2 text-emerald-700 font-bold text-xs bg-emerald-100 px-1.5 py-0.5 border border-emerald-300">
+                <span className="absolute top-2.5 right-2.5 text-emerald-700 font-bold text-[11px] bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
                   ✓ Placed
                 </span>
               ) : (
-                <span className="absolute top-2 right-2 text-[10px] font-bold text-gray-400">
+                <span className="absolute top-2.5 right-2.5 text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200">
                   Drag
                 </span>
               )}

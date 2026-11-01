@@ -37,12 +37,12 @@ export default function AlphabetGrid() {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs sm:text-sm font-bold bg-[#ede9fe] text-[#7c3aed] px-3 py-1 border border-purple-200 rounded-none">
+            <span className="text-xs sm:text-sm font-bold bg-[#ede9fe] text-[#7c3aed] px-3 py-1 border border-purple-200 rounded-full">
               {isLower ? 'Small Letters (a – z)' : 'Capital Letters (A – Z)'}
             </span>
             <button
               onClick={() => navigate('/')}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer rounded-none"
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer rounded-xl shadow-xs"
             >
               Home
             </button>
@@ -61,7 +61,7 @@ export default function AlphabetGrid() {
           </span>
         </div>
 
-        {/* 26 Letter Grid - rounded-none buttons */}
+        {/* 26 Letter Grid - rounded-2xl buttons */}
         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-9 gap-2.5 sm:gap-3">
           {displayLetters.map((letter) => {
             const baseLetter = letter.toLowerCase();
@@ -72,16 +72,16 @@ export default function AlphabetGrid() {
                 key={letter}
                 onClick={() => navigate(`/practice/${ct}/${baseLetter}`)}
                 className={`
-                  relative aspect-square text-3xl font-black flex items-center justify-center cursor-pointer transition-all border rounded-none
+                  relative aspect-square text-3xl font-black flex items-center justify-center cursor-pointer transition-all border rounded-2xl shadow-xs hover:shadow-md hover:scale-105
                   ${completed
-                    ? 'bg-emerald-50 border-emerald-400 text-emerald-700 shadow-xs'
-                    : 'bg-white border-gray-300 hover:border-indigo-600 text-[#1e1b4b] hover:bg-indigo-50/50 shadow-xs'
+                    ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                    : 'bg-white border-gray-300 hover:border-indigo-600 text-[#1e1b4b] hover:bg-indigo-50/50'
                   }
                 `}
               >
                 {letter}
                 {completed && (
-                  <span className="absolute top-1 right-1 text-xs bg-emerald-600 text-white w-4 h-4 flex items-center justify-center font-bold rounded-none">
+                  <span className="absolute top-1 right-1 text-xs bg-emerald-600 text-white w-4 h-4 flex items-center justify-center font-bold rounded-full">
                     ✓
                   </span>
                 )}
@@ -91,12 +91,12 @@ export default function AlphabetGrid() {
         </div>
 
         {/* Progress Bar */}
-        <div className="mt-6 bg-white p-4 border border-gray-200 rounded-none">
+        <div className="mt-6 bg-white p-4 border border-gray-200 rounded-2xl shadow-xs">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-gray-500 whitespace-nowrap">Overall Progress</span>
-            <div className="flex-1 h-3 bg-[#ede9fe] rounded-none overflow-hidden">
+            <div className="flex-1 h-3 bg-[#ede9fe] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#22c55e] transition-all duration-300"
+                className="h-full bg-[#22c55e] transition-all duration-300 rounded-full"
                 style={{ width: `${(completionCount / 26) * 100}%` }}
               />
             </div>
