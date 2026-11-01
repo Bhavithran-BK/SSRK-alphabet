@@ -212,7 +212,7 @@ export default function PracticeWorkspace() {
   const displayChar = isLower ? currentLetter : currentLetter.toUpperCase();
 
   return (
-    <div className="h-screen max-h-screen w-full bg-[#fbfbfe] text-[#1e1b4b] flex flex-col justify-between p-3 sm:p-4 overflow-hidden select-none">
+    <div className="h-screen max-h-screen w-full bg-[#fbfbfe] text-[#1e1b4b] flex flex-col justify-between overflow-hidden select-none">
       {/* Floating Dragged Preview with rounded corners */}
       <div
         ref={dragElementRef}
@@ -238,43 +238,43 @@ export default function PracticeWorkspace() {
         />
       </div>
 
-      {/* TOP HEADER */}
-      <header className="w-full border-b border-gray-200/80 pb-2">
-        <div className="flex items-center justify-between gap-3">
+      {/* TOP HEADER - Spacious Navigation Bar with Medium-Sized Options */}
+      <header className="w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-3 shrink-0 shadow-xs">
+        <div className="flex items-center justify-between gap-4">
           {/* Logo & School Name */}
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
             <img
               src="/logo.png"
               alt="Sri Sairam Kids Play School"
-              className="w-10 h-10 object-contain shrink-0"
+              className="w-10 h-10 sm:w-11 sm:h-11 object-contain group-hover:scale-105 transition-transform shrink-0"
             />
             <div className="flex flex-col">
               <span className="text-base sm:text-lg font-black text-[#1e1b4b] leading-tight tracking-tight">
                 Sri Sairam Kids Play School
               </span>
-              <span className="text-[10px] sm:text-xs font-semibold text-indigo-600">
+              <span className="text-[11px] sm:text-xs font-semibold text-indigo-600">
                 we make your child genius
               </span>
             </div>
           </div>
 
-          {/* Practice Badge */}
-          <div className="hidden md:flex items-center gap-2">
-            <span className="text-sm font-bold text-[#1e1b4b]">
+          {/* Practice Badge in Center */}
+          <div className="hidden md:flex items-center gap-2.5 px-4 py-1.5 bg-[#f5f3ff] border border-purple-200 rounded-lg shadow-xs">
+            <span className="text-sm font-extrabold text-[#1e1b4b]">
               {isLower ? 'Small Letters Practice' : 'Capital Letters Practice'}
             </span>
-            <span className="bg-[#ede9fe] text-[#7c3aed] text-xs font-bold px-3 py-1 border border-purple-200 rounded-full">
+            <span className="bg-[#ede9fe] text-[#7c3aed] text-xs font-black px-2.5 py-0.5 rounded-md">
               {isLower ? 'a – z' : 'A – Z'}
             </span>
           </div>
 
-          {/* Progress & Navigation (Smooth rounded buttons) */}
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end">
-              <span className="text-[11px] font-semibold text-gray-500">
+          {/* Progress & Navigation (Medium Sized Options) */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex flex-col items-end mr-1">
+              <span className="text-xs font-bold text-gray-500">
                 Letter {letterNumber} of 26 ({progressPercent}%)
               </span>
-              <div className="w-28 sm:w-36 h-2.5 bg-[#ede9fe] overflow-hidden rounded-full">
+              <div className="w-32 sm:w-40 h-3 bg-[#ede9fe] overflow-hidden rounded-full mt-1 border border-purple-100">
                 <div
                   className="h-full bg-[#22c55e] transition-all duration-300 rounded-full"
                   style={{ width: `${progressPercent}%` }}
@@ -284,22 +284,24 @@ export default function PracticeWorkspace() {
 
             <button
               onClick={() => navigate(`/alphabet/${ct}`)}
-              className="px-3.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-[#1e1b4b] text-xs font-bold transition-all cursor-pointer rounded-md shadow-xs"
+              className="px-4 py-2 sm:px-5 sm:py-2.5 bg-white border border-gray-300 hover:border-indigo-500 hover:bg-indigo-50/50 text-[#1e1b4b] text-sm font-bold transition-all cursor-pointer rounded-lg shadow-xs flex items-center gap-1.5"
             >
-              All Letters
+              <span>🔤</span>
+              <span>All Letters</span>
             </button>
             <button
               onClick={() => navigate('/')}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer rounded-md shadow-xs"
+              className="px-4 py-2 sm:px-5 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-all cursor-pointer rounded-lg shadow-sm flex items-center gap-1.5"
             >
-              Home
+              <span>🏠</span>
+              <span>Home</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* MAIN 3-COLUMN LAYOUT: Fits laptop screen */}
-      <main className="flex-1 min-h-0 grid grid-cols-12 gap-3 sm:gap-4 my-2 items-stretch">
+      <main className="flex-1 min-h-0 grid grid-cols-12 gap-3 sm:gap-4 px-4 sm:px-6 lg:px-8 py-2.5 items-stretch">
         {/* LEFT COLUMN: Mascot & Instructions (col-span-3) */}
         <div className="col-span-3 flex flex-col justify-between gap-2.5 h-full min-h-0">
           {/* Mascot Box */}
@@ -378,8 +380,8 @@ export default function PracticeWorkspace() {
         </div>
       </main>
 
-      {/* BOTTOM ACTION BAR: Smooth rounded buttons */}
-      <footer className="w-full border-t border-gray-200/80 pt-2 shrink-0">
+      {/* BOTTOM ACTION BAR */}
+      <footer className="w-full bg-white/95 border-t border-gray-200 px-4 sm:px-6 py-2.5 shrink-0 shadow-xs">
         <div className="flex items-center justify-center gap-6 sm:gap-8">
           {/* Previous Button: rounded-2xl */}
           <button
