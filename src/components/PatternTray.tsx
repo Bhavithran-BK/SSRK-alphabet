@@ -1,5 +1,6 @@
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { Stroke } from '../types';
+import { sounds } from '../utils/audio';
 
 interface PatternTrayProps {
   strokes: Stroke[];
@@ -97,8 +98,22 @@ export default function PatternTray({
               </div>
 
               {/* Pattern Name */}
-              <div className="text-center font-bold text-[#1e1b4b] text-xs sm:text-sm mt-1">
-                {stroke.patternName}
+              <div className="text-center font-bold text-[#1e1b4b] text-xs sm:text-sm mt-1 flex items-center justify-center gap-1.5">
+                <span>{stroke.patternName}</span>
+                <button
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    sounds.speakPattern(stroke.patternName);
+                  }}
+                  title={`Hear "${stroke.patternName}"`}
+                  className="text-indigo-400 hover:text-indigo-600 transition-colors p-0.5 cursor-pointer text-xs"
+                >
+                  🔊
+                </button>
               </div>
             </div>
           );

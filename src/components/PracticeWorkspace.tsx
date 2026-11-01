@@ -54,7 +54,10 @@ export default function PracticeWorkspace() {
   const hasPrev = letterIndex > 0;
   const hasNext = letterIndex < 25;
 
-  const handleStrokeComplete = useCallback((strokeId: string) => {
+  const handleStrokeComplete = useCallback((strokeId: string, patternName?: string) => {
+    if (patternName) {
+      sounds.speakPattern(patternName);
+    }
     setCompletedStrokes(prev => {
       const next = new Set(prev);
       next.add(strokeId);
@@ -64,7 +67,7 @@ export default function PracticeWorkspace() {
           sounds.playCelebration();
           markLetterCompleted(ct, currentLetter);
           setShowCompletion(true);
-        }, 500);
+        }, 900);
       }
 
       return next;
@@ -173,7 +176,7 @@ export default function PracticeWorkspace() {
       const distToOwnTarget = Math.hypot(svgCoords.x - activeStroke.targetX, svgCoords.y - activeStroke.targetY);
       if (distToOwnTarget <= 65 && !completedStrokes.has(activeStroke.id)) {
         sounds.playSnap();
-        handleStrokeComplete(activeStroke.id);
+        handleStrokeComplete(activeStroke.id, activeStroke.patternName);
         return;
       }
 
@@ -191,7 +194,7 @@ export default function PracticeWorkspace() {
 
       if (foundSnap) {
         sounds.playSnap();
-        handleStrokeComplete(foundSnap.id);
+        handleStrokeComplete(foundSnap.id, foundSnap.patternName);
       } else {
         sounds.playGentleError();
       }

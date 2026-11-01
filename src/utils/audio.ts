@@ -1,8 +1,26 @@
-// Web Audio API sound synthesizer for child-friendly feedback
+// Web Audio API sound synthesizer and Speech Synthesis for child-friendly feedback
 
 class SoundEffects {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
+  private voices: SpeechSynthesisVoice[] = [];
+  private currentUtterance: SpeechSynthesisUtterance | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const loadVoices = () => {
+        try {
+          this.voices = window.speechSynthesis.getVoices();
+        } catch {
+          // ignore
+        }
+      };
+      loadVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
+    }
+  }
 
   private initContext() {
     if (!this.ctx && typeof window !== 'undefined') {
@@ -18,10 +36,36 @@ class SoundEffects {
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
+    if (muted && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
   }
 
   public getMuted(): boolean {
     return this.isMuted;
+  }
+
+  private getPreferredVoice(): SpeechSynthesisVoice | null {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+
+    if (!this.voices || this.voices.length === 0) {
+      try {
+        this.voices = window.speechSynthesis.getVoices();
+      } catch {
+        return null;
+      }
+    }
+
+    if (!this.voices || this.voices.length === 0) return null;
+
+    // Prefer high-quality English voice (natural, clear, friendly tone for kids)
+    const preferred =
+      this.voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Jenny') || v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Aria'))) ||
+      this.voices.find(v => v.lang.startsWith('en-US')) ||
+      this.voices.find(v => v.lang.startsWith('en')) ||
+      this.voices[0];
+
+    return preferred || null;
   }
 
   // Soft pop sound when picking up or tapping a piece
@@ -149,16 +193,78 @@ class SoundEffects {
     }
   }
 
-  // Letter audio pronunciation using SpeechSynthesis API (zero-asset)
-  public speakLetter(letter: string) {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  // Speak pattern name aloud when placed in the outline ("Crossing line", "Standing line", "Sleeping line", "Curve", "Dot")
+  public speakPattern(patternName: string) {
+    if (this.isMuted) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
     try {
-      window.speechSynthesis.cancel();
+      const synth = window.speechSynthesis;
+      if (synth.paused) {
+        synth.resume();
+      }
+      synth.cancel();
+
+      // Normalize pattern text for clear child speech
+      const text = patternName.trim();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.88;   // Natural, clear, articulate cadence for children
+      utterance.pitch = 1.15;  // Cheerful, friendly pitch
+      utterance.lang = 'en-US';
+
+      const voice = this.getPreferredVoice();
+      if (voice) {
+        utterance.voice = voice;
+      }
+
+      this.currentUtterance = utterance;
+      utterance.onend = () => {
+        if (this.currentUtterance === utterance) {
+          this.currentUtterance = null;
+        }
+      };
+      utterance.onerror = () => {
+        if (this.currentUtterance === utterance) {
+          this.currentUtterance = null;
+        }
+      };
+
+      synth.speak(utterance);
+    } catch {
+      // Speech failed or not permitted
+    }
+  }
+
+  // Letter audio pronunciation using SpeechSynthesis API
+  public speakLetter(letter: string) {
+    if (this.isMuted) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    try {
+      const synth = window.speechSynthesis;
+      if (synth.paused) {
+        synth.resume();
+      }
+      synth.cancel();
+
       const utterance = new SpeechSynthesisUtterance(letter);
       utterance.rate = 0.85;
       utterance.pitch = 1.15; // friendly tone for kids
       utterance.lang = 'en-US';
-      window.speechSynthesis.speak(utterance);
+
+      const voice = this.getPreferredVoice();
+      if (voice) {
+        utterance.voice = voice;
+      }
+
+      this.currentUtterance = utterance;
+      utterance.onend = () => {
+        if (this.currentUtterance === utterance) {
+          this.currentUtterance = null;
+        }
+      };
+
+      synth.speak(utterance);
     } catch {
       // Speech failed
     }
@@ -166,4 +272,3 @@ class SoundEffects {
 }
 
 export const sounds = new SoundEffects();
-
