@@ -1,9 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import type { CaseType, LetterData, Stroke, PatternName } from '../types';
-import { patternConfigs } from '../data/patterns';
+import type { CaseType, LetterData, Stroke } from '../types';
 import { markLetterCompleted } from '../utils/progress';
 import { sounds } from '../utils/audio';
 import LetterWorkspace from './LetterWorkspace';
@@ -25,21 +24,28 @@ export default function PracticeWorkspace() {
   const [completedStrokes, setCompletedStrokes] = useState<Set<string>>(new Set());
   const [showCompletion, setShowCompletion] = useState(false);
   const [letterData, setLetterData] = useState<LetterData | null>(null);
-  const [selectedPattern, setSelectedPattern] = useState<PatternName | null>(null);
-  const [activeDragPattern, setActiveDragPattern] = useState<PatternName | null>(null);
-  const [activeDragStroke, setActiveDragStroke] = useState<Stroke | null>(null);
-  const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [activeHoveredStrokeId, setActiveHoveredStrokeId] = useState<string | null>(null);
 
-  // Load letter data when current letter or case changes
+  // High-performance direct DOM dragging refs (0 lag, 120 FPS GPU accelerated)
+  const dragElementRef = useRef<HTMLDivElement | null>(null);
+  const dragSvgPathRef = useRef<SVGPathElement | null>(null);
+  const dragLabelRef = useRef<HTMLDivElement | null>(null);
+  const draggingStrokeRef = useRef<Stroke | null>(null);
+  const hoveredIdRef = useRef<string | null>(null);
+
+  // Load letter data when letter changes
   useEffect(() => {
     const letters = isLower ? lowercaseLetters : uppercaseLetters;
     const found = letters.find(l => l.character.toLowerCase() === currentLetter);
     setLetterData(found || null);
     setCompletedStrokes(new Set());
     setShowCompletion(false);
-    setSelectedPattern(null);
-    setActiveDragPattern(null);
-    setActiveDragStroke(null);
+    setActiveHoveredStrokeId(null);
+    hoveredIdRef.current = null;
+    draggingStrokeRef.current = null;
+    if (dragElementRef.current) {
+      dragElementRef.current.style.display = 'none';
+    }
   }, [currentLetter, ct, isLower]);
 
   const letterIndex = allLetters.indexOf(currentLetter);
@@ -68,9 +74,8 @@ export default function PracticeWorkspace() {
   const handleReset = useCallback(() => {
     setCompletedStrokes(new Set());
     setShowCompletion(false);
-    setSelectedPattern(null);
-    setActiveDragPattern(null);
-    setActiveDragStroke(null);
+    setActiveHoveredStrokeId(null);
+    hoveredIdRef.current = null;
     sounds.playPickup();
   }, []);
 
@@ -86,98 +91,190 @@ export default function PracticeWorkspace() {
     if (hasNext) goToLetter(allLetters[letterIndex + 1]);
   };
 
-  // Drag tracking
-  const handleStartDrag = useCallback((patternName: PatternName, e: ReactPointerEvent, stroke?: Stroke) => {
-    setActiveDragPattern(patternName);
-    setActiveDragStroke(stroke || null);
-    setDragPos({ x: e.clientX, y: e.clientY });
+  // Convert screen coordinates to SVG coordinates
+  const getSvgCoordinates = (clientX: number, clientY: number): { x: number; y: number } | null => {
+    const svg = document.getElementById('letter-workspace-svg') as SVGSVGElement | null;
+    if (!svg) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    const svgPoint = pt.matrixTransform(ctm.inverse());
+    return { x: svgPoint.x, y: svgPoint.y };
+  };
+
+  // Start dragging - initialized without re-rendering the whole page
+  const handleStartDrag = useCallback((stroke: Stroke, e: ReactPointerEvent) => {
+    draggingStrokeRef.current = stroke;
+    sounds.playPickup();
+
+    if (dragElementRef.current && dragSvgPathRef.current && dragLabelRef.current) {
+      const displayPath = stroke.previewPath || stroke.targetPath;
+      dragSvgPathRef.current.setAttribute('d', displayPath);
+      dragLabelRef.current.textContent = stroke.patternName;
+      dragElementRef.current.style.display = 'block';
+      dragElementRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+    }
   }, []);
 
+  // Global Pointer Listeners for buttery smooth 120 FPS dragging
   useEffect(() => {
-    if (!activeDragPattern) return;
-
     const onPointerMove = (e: PointerEvent) => {
-      setDragPos({ x: e.clientX, y: e.clientY });
+      const activeStroke = draggingStrokeRef.current;
+      if (!activeStroke || !dragElementRef.current) return;
+
+      // Update floating preview directly in the DOM (Zero React re-render lag)
+      dragElementRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+
+      // Check proximity to strokes in SVG
+      if (!letterData) return;
+      const svgCoords = getSvgCoordinates(e.clientX, e.clientY);
+      if (!svgCoords) {
+        if (hoveredIdRef.current !== null) {
+          hoveredIdRef.current = null;
+          setActiveHoveredStrokeId(null);
+        }
+        return;
+      }
+
+      // Check if near any uncompleted stroke
+      let matchedId: string | null = null;
+      for (const s of letterData.strokes) {
+        if (completedStrokes.has(s.id)) continue;
+        const dist = Math.hypot(svgCoords.x - s.targetX, svgCoords.y - s.targetY);
+        if (dist <= 65) {
+          matchedId = s.id;
+          break;
+        }
+      }
+
+      // Only trigger state update when hover target changes
+      if (hoveredIdRef.current !== matchedId) {
+        hoveredIdRef.current = matchedId;
+        setActiveHoveredStrokeId(matchedId);
+      }
     };
 
-    const onPointerUp = () => {
-      setActiveDragPattern(null);
-      setActiveDragStroke(null);
+    const onPointerUp = (e: PointerEvent) => {
+      const activeStroke = draggingStrokeRef.current;
+      if (!activeStroke) return;
+
+      // Hide drag element
+      if (dragElementRef.current) {
+        dragElementRef.current.style.display = 'none';
+      }
+      draggingStrokeRef.current = null;
+      hoveredIdRef.current = null;
+      setActiveHoveredStrokeId(null);
+
+      // Check if dropped near target
+      if (!letterData) return;
+      const svgCoords = getSvgCoordinates(e.clientX, e.clientY);
+      if (!svgCoords) {
+        sounds.playGentleError();
+        return;
+      }
+
+      // 1. Direct match check with activeStroke
+      const distToOwnTarget = Math.hypot(svgCoords.x - activeStroke.targetX, svgCoords.y - activeStroke.targetY);
+      if (distToOwnTarget <= 65 && !completedStrokes.has(activeStroke.id)) {
+        sounds.playSnap();
+        handleStrokeComplete(activeStroke.id);
+        return;
+      }
+
+      // 2. Compatibility check with other strokes of same type
+      let foundSnap: Stroke | null = null;
+      for (const s of letterData.strokes) {
+        if (completedStrokes.has(s.id)) continue;
+        const d = Math.hypot(svgCoords.x - s.targetX, svgCoords.y - s.targetY);
+        if (d <= 65) {
+          if (s.patternName === activeStroke.patternName || s.id === activeStroke.id) {
+            foundSnap = s;
+            break;
+          }
+        }
+      }
+
+      if (foundSnap) {
+        sounds.playSnap();
+        handleStrokeComplete(foundSnap.id);
+      } else {
+        sounds.playGentleError();
+      }
     };
 
-    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('pointerup', onPointerUp);
 
     return () => {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
     };
-  }, [activeDragPattern]);
+  }, [letterData, completedStrokes, handleStrokeComplete]);
 
   const displayChar = isLower ? currentLetter : currentLetter.toUpperCase();
 
   return (
     <div className="h-screen max-h-screen w-full bg-[#fbfbfe] text-[#1e1b4b] flex flex-col justify-between p-3 sm:p-4 overflow-hidden select-none">
-      {/* Floating Dragged Piece Preview */}
-      {activeDragPattern && (
-        <div
-          className="fixed pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 bg-white/95 p-3 shadow-2xl border-2 border-indigo-500 scale-105 rounded-none"
-          style={{ left: dragPos.x, top: dragPos.y }}
-        >
-          <div className="w-16 h-16 flex items-center justify-center">
-            <svg
-              viewBox="0 0 60 60"
-              className="w-full h-full"
-            >
-              <path
-                d={activeDragStroke?.previewPath || activeDragStroke?.targetPath || patternConfigs[activeDragPattern]?.displayPath}
-                fill={activeDragPattern === 'Dot' ? '#4f46e5' : 'none'}
-                stroke="#4f46e5"
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="text-xs font-bold text-center text-[#1e1b4b] mt-1 whitespace-nowrap">
-            {activeDragPattern}
-          </div>
+      {/* Lag-Free Direct-DOM Floating Dragged Preview */}
+      <div
+        ref={dragElementRef}
+        className="fixed pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 bg-white/95 p-3 shadow-2xl border-2 border-indigo-600 scale-105 rounded-none"
+        style={{ display: 'none', top: 0, left: 0 }}
+      >
+        <div className="w-16 h-16 flex items-center justify-center">
+          <svg viewBox="0 0 60 60" className="w-full h-full">
+            <path
+              ref={dragSvgPathRef}
+              d=""
+              fill="none"
+              stroke="#4f46e5"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
-      )}
+        <div
+          ref={dragLabelRef}
+          className="text-xs font-bold text-center text-[#1e1b4b] mt-1 whitespace-nowrap"
+        />
+      </div>
 
-      {/* TOP HEADER: School Logo, School Name, Controls */}
-      <div className="w-full border-b border-gray-200/80 pb-2">
+      {/* TOP HEADER: Sri Sairam Kids Play School Logo & Title */}
+      <div className="w-full border-b border-gray-200 pb-2">
         <div className="flex items-center justify-between gap-3">
           {/* Logo & School Name */}
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
             <img
               src="/logo.png"
               alt="Sri Sairam Kids Play School"
-              className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0"
+              className="w-10 h-10 object-contain shrink-0"
             />
             <div className="flex flex-col">
               <span className="text-base sm:text-lg font-black text-[#1e1b4b] leading-tight tracking-tight">
                 Sri Sairam Kids Play School
               </span>
-              <span className="text-[10px] sm:text-xs font-bold text-indigo-600 tracking-wide">
-                Alphabet Handwriting Practice
+              <span className="text-[10px] sm:text-xs font-semibold text-indigo-600">
+                we make your child genius
               </span>
             </div>
           </div>
 
-          {/* Center Category Badge */}
+          {/* Practice Badge */}
           <div className="hidden md:flex items-center gap-2">
             <span className="text-sm font-bold text-[#1e1b4b]">
               {isLower ? 'Small Letters Practice' : 'Capital Letters Practice'}
             </span>
-            <span className="bg-[#ede9fe] text-[#7c3aed] text-xs font-bold px-2.5 py-0.5 rounded-none border border-purple-200">
+            <span className="bg-[#ede9fe] text-[#7c3aed] text-xs font-bold px-2.5 py-0.5 border border-purple-200 rounded-none">
               {isLower ? 'a – z' : 'A – Z'}
             </span>
           </div>
 
-          {/* Right: Progress & Buttons (No rounded corners) */}
+          {/* Progress & Navigation (No rounded corners) */}
           <div className="flex items-center gap-3">
-            {/* Progress */}
             <div className="flex flex-col items-end">
               <span className="text-[11px] font-semibold text-gray-500">
                 Letter {letterNumber} of 26 ({progressPercent}%)
@@ -190,7 +287,6 @@ export default function PracticeWorkspace() {
               </div>
             </div>
 
-            {/* Navigation buttons: sharp rectangular corners */}
             <button
               onClick={() => navigate(`/alphabet/${ct}`)}
               className="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-[#1e1b4b] text-xs font-bold transition-colors cursor-pointer rounded-none"
@@ -207,12 +303,12 @@ export default function PracticeWorkspace() {
         </div>
       </div>
 
-      {/* MAIN 3-COLUMN LAYOUT: Utilizes full laptop screen height */}
+      {/* MAIN 3-COLUMN LAYOUT: Fits completely on laptop screen */}
       <div className="flex-1 min-h-0 grid grid-cols-12 gap-3 sm:gap-4 my-2 items-stretch">
         {/* LEFT COLUMN: Mascot & Instructions (col-span-3) */}
         <div className="col-span-3 flex flex-col justify-between gap-2.5 h-full min-h-0">
           {/* Mascot */}
-          <div className="flex items-center justify-center p-1 bg-white border border-gray-200 rounded-none shrink-0">
+          <div className="flex items-center justify-center p-2 bg-white border border-gray-200 rounded-none shrink-0">
             <img
               src="/mascot.png"
               alt="Mascot"
@@ -223,11 +319,9 @@ export default function PracticeWorkspace() {
           {/* Instructions Box */}
           <div className="bg-[#f5f3ff] p-3.5 border border-purple-100 flex-1 flex flex-col justify-between rounded-none overflow-y-auto">
             <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-purple-100">
-              <div className="w-5 h-5 bg-[#7c3aed] flex items-center justify-center text-white text-xs font-bold rounded-none">
-                🎯
-              </div>
+              <span className="text-sm">🎯</span>
               <h3 className="font-bold text-[#1e1b4b] text-sm">
-                Instructions
+                How to Play
               </h3>
             </div>
 
@@ -237,7 +331,7 @@ export default function PracticeWorkspace() {
                   1
                 </span>
                 <span className="font-medium leading-snug">
-                  Drag a pattern from the right.
+                  Drag a pattern piece from the right panel.
                 </span>
               </div>
 
@@ -246,7 +340,7 @@ export default function PracticeWorkspace() {
                   2
                 </span>
                 <span className="font-medium leading-snug">
-                  Place it on the dotted letter.
+                  Drop it onto the matching stroke track on the letter.
                 </span>
               </div>
 
@@ -255,7 +349,7 @@ export default function PracticeWorkspace() {
                   3
                 </span>
                 <span className="font-medium leading-snug">
-                  When it fits, it will snap and turn green.
+                  When placed correctly, it will snap and turn green!
                 </span>
               </div>
             </div>
@@ -266,30 +360,23 @@ export default function PracticeWorkspace() {
           </div>
         </div>
 
-        {/* MIDDLE COLUMN: Dotted Letter Workspace (col-span-6) */}
+        {/* MIDDLE COLUMN: Letter Workspace with Stroke Tracks (col-span-6) */}
         <div className="col-span-6 flex flex-col items-center justify-center h-full min-h-0">
           {letterData && (
             <LetterWorkspace
               letterData={letterData}
               completedStrokes={completedStrokes}
-              onStrokeComplete={handleStrokeComplete}
-              selectedPattern={selectedPattern}
-              onClearSelectedPattern={() => setSelectedPattern(null)}
-              activeDragPattern={activeDragPattern}
-              activeDragStroke={activeDragStroke}
+              activeHoveredStrokeId={activeHoveredStrokeId}
             />
           )}
         </div>
 
-        {/* RIGHT COLUMN: Available Patterns (col-span-3) */}
+        {/* RIGHT COLUMN: Available Patterns aligned to this letter (col-span-3) */}
         <div className="col-span-3 flex flex-col h-full min-h-0">
           {letterData && (
             <PatternTray
               strokes={letterData.strokes}
               completedStrokes={completedStrokes}
-              patternConfigs={patternConfigs}
-              selectedPattern={selectedPattern}
-              onSelectPattern={setSelectedPattern}
               onStartDrag={handleStartDrag}
             />
           )}
@@ -297,7 +384,7 @@ export default function PracticeWorkspace() {
       </div>
 
       {/* BOTTOM ACTION BAR: Sharp rectangular buttons, well-spaced, no rounded corners */}
-      <div className="w-full border-t border-gray-200/80 pt-2 shrink-0">
+      <div className="w-full border-t border-gray-200 pt-2 shrink-0">
         <div className="flex items-center justify-center gap-6 sm:gap-8">
           {/* Previous Button: Sharp corners */}
           <button
