@@ -20,7 +20,7 @@ export default function PatternTray({
   onStartDrag,
 }: PatternTrayProps) {
   return (
-    <div className="bg-white border-2 border-indigo-100/80 shadow-md flex flex-col h-full w-full p-4 rounded-3xl select-none">
+    <div className="bg-white border border-indigo-100/80 shadow-sm flex flex-col h-full w-full p-4 rounded-lg select-none">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
@@ -29,7 +29,7 @@ export default function PatternTray({
             Available Patterns
           </h2>
         </div>
-        <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+        <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200">
           Drag to Match
         </span>
       </div>
@@ -47,7 +47,7 @@ export default function PatternTray({
             <div
               key={stroke.id}
               className={`
-                relative bg-white border-2 transition-all p-3 flex flex-col items-center justify-center rounded-2xl
+                relative bg-white border transition-all p-3 flex flex-col items-center justify-center rounded-lg
                 ${isDone
                   ? 'border-emerald-300 bg-emerald-50/50 opacity-60 cursor-default shadow-xs'
                   : 'border-purple-200 hover:border-indigo-600 hover:shadow-md cursor-grab active:cursor-grabbing bg-white shadow-xs hover:scale-[1.01]'

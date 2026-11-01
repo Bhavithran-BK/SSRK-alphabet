@@ -37,12 +37,12 @@ export default function AlphabetGrid() {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs sm:text-sm font-bold bg-[#ede9fe] text-[#7c3aed] px-3 py-1 border border-purple-200 rounded-full">
+            <span className="text-xs sm:text-sm font-bold bg-[#ede9fe] text-[#7c3aed] px-3 py-1 border border-purple-200 rounded-md">
               {isLower ? 'Small Letters (a – z)' : 'Capital Letters (A – Z)'}
             </span>
             <button
               onClick={() => navigate('/')}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer rounded-xl shadow-xs"
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer rounded-md shadow-xs"
             >
               Home
             </button>
@@ -72,7 +72,7 @@ export default function AlphabetGrid() {
                 key={letter}
                 onClick={() => navigate(`/practice/${ct}/${baseLetter}`)}
                 className={`
-                  relative aspect-square text-3xl font-black flex items-center justify-center cursor-pointer transition-all border rounded-2xl shadow-xs hover:shadow-md hover:scale-105
+                  relative aspect-square text-3xl font-black flex items-center justify-center cursor-pointer transition-all border rounded-lg shadow-xs hover:shadow-md hover:scale-105
                   ${completed
                     ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
                     : 'bg-white border-gray-300 hover:border-indigo-600 text-[#1e1b4b] hover:bg-indigo-50/50'
@@ -91,7 +91,7 @@ export default function AlphabetGrid() {
         </div>
 
         {/* Progress Bar */}
-        <div className="mt-6 bg-white p-4 border border-gray-200 rounded-2xl shadow-xs">
+        <div className="mt-6 bg-white p-4 border border-gray-200 rounded-lg shadow-xs">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-gray-500 whitespace-nowrap">Overall Progress</span>
             <div className="flex-1 h-3 bg-[#ede9fe] rounded-full overflow-hidden">

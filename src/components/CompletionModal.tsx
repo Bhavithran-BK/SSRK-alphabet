@@ -41,7 +41,7 @@ export default function CompletionModal({
       </div>
 
       <motion.div
-        className="relative bg-white p-6 sm:p-8 max-w-sm sm:max-w-md w-full shadow-2xl border-2 border-emerald-400 text-center z-10 rounded-3xl"
+        className="relative bg-white p-6 sm:p-8 max-w-sm sm:max-w-md w-full shadow-2xl border border-emerald-400 text-center z-10 rounded-lg"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}
@@ -63,7 +63,7 @@ export default function CompletionModal({
 
         {/* Large completed letter display */}
         <div
-          className="w-24 h-24 mx-auto mb-4 bg-emerald-50 border-2 border-emerald-300 flex items-center justify-center cursor-pointer rounded-2xl shadow-inner"
+          className="w-24 h-24 mx-auto mb-4 bg-emerald-50 border-2 border-emerald-300 flex items-center justify-center cursor-pointer rounded-lg shadow-inner"
           onClick={() => sounds.speakLetter(letter)}
           title="Click to hear pronunciation"
         >
@@ -77,7 +77,7 @@ export default function CompletionModal({
           {onNext && (
             <button
               onClick={onNext}
-              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm cursor-pointer transition-all rounded-2xl shadow-md shadow-emerald-600/20"
+              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm cursor-pointer transition-all rounded-md shadow-md shadow-emerald-600/20"
             >
               Next Letter ➡️
             </button>
@@ -86,13 +86,13 @@ export default function CompletionModal({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={onReplay}
-              className="py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs cursor-pointer transition-colors border border-gray-300 rounded-xl"
+              className="py-2.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs cursor-pointer transition-colors border border-gray-300 rounded-md"
             >
               🔄 Try Again
             </button>
             <button
               onClick={onHome}
-              className="py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer transition-colors rounded-xl shadow-xs"
+              className="py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer transition-colors rounded-md shadow-xs"
             >
               🏠 Home
             </button>

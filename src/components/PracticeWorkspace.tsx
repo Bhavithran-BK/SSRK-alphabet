@@ -213,7 +213,7 @@ export default function PracticeWorkspace() {
       {/* Floating Dragged Preview with rounded corners */}
       <div
         ref={dragElementRef}
-        className="fixed pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 bg-white/95 p-3.5 shadow-2xl border-2 border-indigo-600 scale-105 rounded-2xl"
+        className="fixed pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 bg-white/95 p-3.5 shadow-2xl border-2 border-indigo-600 scale-105 rounded-lg"
         style={{ display: 'none', top: 0, left: 0 }}
       >
         <div className="w-16 h-16 flex items-center justify-center">
@@ -281,13 +281,13 @@ export default function PracticeWorkspace() {
 
             <button
               onClick={() => navigate(`/alphabet/${ct}`)}
-              className="px-3.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-[#1e1b4b] text-xs font-bold transition-all cursor-pointer rounded-xl shadow-xs"
+              className="px-3.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-[#1e1b4b] text-xs font-bold transition-all cursor-pointer rounded-md shadow-xs"
             >
               All Letters
             </button>
             <button
               onClick={() => navigate('/')}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer rounded-xl shadow-xs"
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer rounded-md shadow-xs"
             >
               Home
             </button>
@@ -300,7 +300,7 @@ export default function PracticeWorkspace() {
         {/* LEFT COLUMN: Mascot & Instructions (col-span-3) */}
         <div className="col-span-3 flex flex-col justify-between gap-2.5 h-full min-h-0">
           {/* Mascot Box */}
-          <div className="flex items-center justify-center p-2 bg-white border-2 border-indigo-100/80 rounded-3xl shadow-xs shrink-0">
+          <div className="flex items-center justify-center p-2 bg-white border-2 border-indigo-100/80 rounded-lg shadow-xs shrink-0">
             <img
               src="/mascot.png"
               alt="Mascot"
@@ -309,7 +309,7 @@ export default function PracticeWorkspace() {
           </div>
 
           {/* Instructions Box */}
-          <div className="bg-[#f5f3ff] p-4 border border-purple-100 flex-1 flex flex-col justify-between rounded-3xl shadow-xs overflow-y-auto">
+          <div className="bg-[#f5f3ff] p-4 border border-purple-100 flex-1 flex flex-col justify-between rounded-lg shadow-xs overflow-y-auto">
             <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-purple-100">
               <span className="text-sm">🎯</span>
               <h3 className="font-bold text-[#1e1b4b] text-sm">
@@ -383,7 +383,7 @@ export default function PracticeWorkspace() {
             onClick={goPrev}
             disabled={!hasPrev}
             className={`
-              rounded-2xl px-8 py-2.5 text-sm font-bold border transition-all flex items-center gap-2 shadow-xs
+              rounded-md px-8 py-2.5 text-sm font-bold border transition-all flex items-center gap-2 shadow-xs
               ${hasPrev
                 ? 'bg-gray-100 text-[#1e1b4b] border-gray-300 hover:bg-gray-200 cursor-pointer'
                 : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
@@ -397,7 +397,7 @@ export default function PracticeWorkspace() {
           {/* Reset Button: rounded-2xl */}
           <button
             onClick={handleReset}
-            className="rounded-2xl px-8 py-2.5 bg-white border-2 border-indigo-600 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition-all shadow-xs cursor-pointer flex items-center gap-2"
+            className="rounded-md px-8 py-2.5 bg-white border-2 border-indigo-600 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition-all shadow-xs cursor-pointer flex items-center gap-2"
           >
             <svg className="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -410,7 +410,7 @@ export default function PracticeWorkspace() {
             onClick={goNext}
             disabled={!hasNext}
             className={`
-              rounded-2xl px-10 py-2.5 text-sm font-bold transition-all shadow-md flex items-center gap-2
+              rounded-md px-10 py-2.5 text-sm font-bold transition-all shadow-md flex items-center gap-2
               ${hasNext
                 ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-indigo-500/20'
                 : 'bg-gray-300 text-gray-500 border border-gray-300 cursor-not-allowed opacity-50'

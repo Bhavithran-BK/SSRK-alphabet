@@ -35,13 +35,13 @@ export default function LetterWorkspace({
   const displayChar = isLower ? letterData.character.toLowerCase() : letterData.character.toUpperCase();
 
   return (
-    <div className="bg-white border-2 border-indigo-100/80 shadow-md flex flex-col items-center justify-between h-full w-full p-4 sm:p-5 relative rounded-3xl select-none">
+    <div className="bg-white border border-indigo-100/80 shadow-sm flex flex-col items-center justify-between h-full w-full p-4 sm:p-5 relative rounded-lg select-none">
       {/* Top Header Label */}
       <div className="w-full flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
           Letter Stroke Guide
         </span>
-        <div className="bg-[#ede9fe] px-4 py-1 flex items-center gap-2 border border-purple-200 rounded-full">
+        <div className="bg-[#ede9fe] px-4 py-1 flex items-center gap-2 border border-purple-200 rounded-md">
           <span className="text-[#1e1b4b] text-xs font-semibold">Letter:</span>
           <span className="text-[#6d28d9] text-base font-extrabold">{displayChar}</span>
         </div>
@@ -163,9 +163,9 @@ export default function LetterWorkspace({
 
         {/* Completion Celebration Overlay */}
         {isAllComplete && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 pointer-events-none rounded-3xl animate-bounce-in">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 pointer-events-none rounded-lg animate-bounce-in">
             <span className="text-6xl mb-2">🎉</span>
-            <span className="text-xl font-black text-emerald-600 bg-white px-5 py-1.5 border-2 border-emerald-300 rounded-full shadow-md">
+            <span className="text-xl font-black text-emerald-600 bg-white px-5 py-1.5 border-2 border-emerald-300 rounded-md shadow-md">
               Letter {displayChar} Completed!
             </span>
           </div>
